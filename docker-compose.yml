@@ -1,0 +1,17 @@
+version: "3.9"
+
+services:
+  naive-bayes-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: naive-bayes-api
+    ports:
+      - "5000:5000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/health').read()"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
