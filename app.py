@@ -7,9 +7,8 @@ FEATURE_NAMES = ["feature_1", "feature_2", "feature_3", "feature_4", "feature_5"
 def build_training_data():
     rng = np.random.default_rng(42)
     profiles = {
-        "class_0": np.array([1, 0, 1, 0, 0], dtype=int),
-        "class_1": np.array([0, 1, 0, 1, 1], dtype=int),
-        "class_2": np.array([1, 1, 1, 0, 1], dtype=int),
+        "positive": np.array([1, 1, 1, 0, 0], dtype=int),
+        "negative": np.array([0, 0, 0, 1, 1], dtype=int),
     }
 
     rows = []
@@ -46,9 +45,11 @@ def home():
         {
             "success": True,
             "status": 200,
-            "message": "Naive Bayes Local Docker API",
+            "message": "Sentiment Classification Local Docker API",
             "data": {
                 "model": "naive_bayes",
+                "task": "sentiment_analysis",
+                "labels": ["positive", "negative"],
                 "endpoint": "/api/v1/predict",
                 "health_status": "healthy",
             },
@@ -65,8 +66,10 @@ def health():
             "message": "Hệ thống sẵn sàng",
             "data": {
                 "model": "naive_bayes",
+                "task": "sentiment_analysis",
                 "health_status": "healthy",
                 "feature_names": FEATURE_NAMES,
+                "labels": ["positive", "negative"],
             },
         }
     )
@@ -121,9 +124,10 @@ def predict():
         {
             "success": True,
             "status": 200,
-            "message": "Dự đoán Naive Bayes thành công",
+            "message": "Dự đoán cảm xúc thành công",
             "data": {
                 "model": "naive_bayes",
+                "task": "sentiment_analysis",
                 "endpoint": "/api/v1/predict",
                 "prediction": predicted_label,
                 "probability": round(confidence, 4),

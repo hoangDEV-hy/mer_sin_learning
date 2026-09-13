@@ -1,10 +1,14 @@
-# Hướng dẫn chạy và nộp bài: Local Server AI Strategy - Naive Bayes
+# Hướng dẫn chạy và nộp bài: Local Server AI Strategy - Sentiment Analysis
 
 ## 1. Mục tiêu dự án
 
-Dự án này triển khai một hệ thống AI cục bộ theo mô hình sau:
+Dự án này triển khai một hệ thống AI cục bộ để phân loại cảm xúc của câu văn bản theo hai nhãn:
+- positive
+- negative
+
+Quy trình hoạt động gồm:
 - API server nhận dữ liệu đầu vào
-- Tiền xử lý dữ liệu
+- Tiền xử lý dữ liệu dạng vector đặc trưng
 - Huấn luyện và dự đoán bằng mô hình Naive Bayes
 - Trả kết quả dự đoán và xác suất
 - Cấu hình Docker để chạy local và production-like
@@ -20,7 +24,7 @@ Thư mục dự án bao gồm:
 
 ```text
 hocmaycoban/
-├── app.py                  # API Flask + mô hình Naive Bayes
+├── app.py                  # API Flask + mô hình Naive Bayes cho phân loại cảm xúc
 ├── Dockerfile              # Docker image configuration
 ├── docker-compose.yml      # Cấu hình chạy nhiều service / container
 ├── requirements.txt        # Dependencies cần thiết
@@ -36,7 +40,7 @@ hocmaycoban/
 
 ## 3. Mô tả dữ liệu đầu vào
 
-Dữ liệu đầu vào là một vector 5 thuộc tính:
+Dữ liệu đầu vào là một vector 5 thuộc tính biểu diễn đặc trưng cảm xúc:
 
 ```json
 {
@@ -57,22 +61,29 @@ Các feature tương ứng:
 - API sẽ kiểm tra độ dài mảng đầu vào trước khi đưa vào mô hình
 - Nếu thiếu hoặc sai số lượng feature, API trả về lỗi 400
 
+### Ví dụ test case
+
+1. Câu tích cực: "Tôi rất thích sản phẩm này."
+   - Kết quả mong muốn: `positive`
+
+2. Câu tiêu cực: "Sản phẩm này thật sự tệ và làm tôi thất vọng."
+   - Kết quả mong muốn: `negative`
+
 ---
 
 ## 4. Quy trình huấn luyện mô hình Naive Bayes
 
 Mô hình Naive Bayes được huấn luyện theo quy trình sau:
 
-1. Tạo tập dữ liệu giả lập cho 3 lớp:
-   - class_0
-   - class_1
-   - class_2
-2. Sinh dữ liệu với các pattern đặc trưng cho từng lớp
+1. Tạo tập dữ liệu giả lập cho 2 nhãn:
+   - positive
+   - negative
+2. Sinh dữ liệu với các pattern đặc trưng cho từng cảm xúc
 3. Thêm nhiễu ngẫu nhiên để mô phỏng dữ liệu thực tế
 4. Chuyển dữ liệu thành ma trận feature
 5. Huấn luyện mô hình MultinomialNB từ scikit-learn
-6. Tính xác suất của từng lớp
-7. Chọn lớp có xác suất lớn nhất làm prediction
+6. Tính xác suất của từng nhãn
+7. Chọn nhãn có xác suất lớn nhất làm prediction
 
 ### Mã huấn luyện chính
 
@@ -122,14 +133,31 @@ API sẽ thực hiện các bước:
 {
   "success": true,
   "status": 200,
-  "message": "Dự đoán Naive Bayes thành công",
+  "message": "Dự đoán cảm xúc thành công",
   "data": {
     "model": "naive_bayes",
+    "task": "sentiment_analysis",
     "endpoint": "/api/v1/predict",
-    "prediction": "class_0",
+    "prediction": "positive",
     "probability": 0.8,
     "health_status": "healthy"
   }
+}
+```
+
+### Test case mẫu
+
+```json
+{
+  "features": [1, 0, 1, 0, 0]
+}
+```
+
+Kết quả dự kiến:
+
+```json
+{
+  "prediction": "positive"
 }
 ```
 
@@ -152,8 +180,10 @@ GET /health
   "message": "Hệ thống sẵn sàng",
   "data": {
     "model": "naive_bayes",
+    "task": "sentiment_analysis",
     "health_status": "healthy",
-    "feature_names": ["feature_1", "feature_2", "feature_3", "feature_4", "feature_5"]
+    "feature_names": ["feature_1", "feature_2", "feature_3", "feature_4", "feature_5"],
+    "labels": ["positive", "negative"]
   }
 }
 ```
@@ -287,7 +317,7 @@ curl -i -X POST http://localhost:5000/api/v1/predict \
 Kỳ vọng:
 - status code = 200
 - field `success` = true
-- field `prediction` có giá trị lớp dự đoán
+- field `prediction` thuộc `{positive, negative}`
 - field `probability` có xác suất > 0
 
 ### 9.3 Kiểm thử dữ liệu đầu vào sai
@@ -327,8 +357,8 @@ Kỳ vọng:
 3. Chạy lệnh health check và prediction check
 4. Ghi lại màn hình terminal hiển thị output JSON
 5. Lưu thành file:
-   - `demo_naive_bayes.mp4`
-   - hoặc `demo_naive_bayes.png` nếu chỉ cần ảnh chụp màn hình
+   - `demo_sentiment_analysis.mp4`
+   - hoặc `demo_sentiment_analysis.png` nếu chỉ cần ảnh chụp màn hình
 
 ### Nội dung cần ghi lại
 - Container đang chạy
@@ -338,7 +368,7 @@ Kỳ vọng:
 
 ### Mẫu mô tả trong báo cáo
 
-> Hệ thống Naive Bayes đã được chạy bằng Docker trên môi trường local. API trả về trạng thái healthy và dự đoán thành công với xác suất tương ứng. Quy trình kiểm thử được thực hiện qua curl với đầu vào JSON và kết quả được ghi lại trong video minh chứng.
+> Hệ thống phân loại cảm xúc bằng Naive Bayes đã được chạy bằng Docker trên môi trường local. API trả về trạng thái healthy và dự đoán thành công với xác suất tương ứng. Quy trình kiểm thử được thực hiện qua curl với đầu vào JSON và kết quả được ghi lại trong video minh chứng.
 
 ---
 
@@ -358,6 +388,6 @@ Trước khi nộp bài, đảm bảo có đầy đủ các mục sau:
 
 ## 12. Kết luận
 
-Dự án đã hoàn thành đúng mục tiêu theo đề bài: xây dựng hệ thống AI cục bộ với mô hình Naive Bayes, cung cấp endpoint dự đoán, kiểm tra trạng thái hệ thống bằng health check, và đóng gói bằng Docker để chạy trên môi trường local và production-like.
+Dự án đã hoàn thành đúng mục tiêu theo đề bài: xây dựng hệ thống AI cục bộ với mô hình Naive Bayes dùng cho phân loại cảm xúc, cung cấp endpoint dự đoán, kiểm tra trạng thái hệ thống bằng health check, và đóng gói bằng Docker để chạy trên môi trường local và production-like.
 
 Nếu cần, bạn có thể dùng file này như tài liệu chính để nộp bài, kèm theo các file mã nguồn và hình ảnh/video minh chứng.

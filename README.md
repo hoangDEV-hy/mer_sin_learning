@@ -1,16 +1,20 @@
-# Hướng dẫn chạy và nộp bài: Local Server AI Strategy - Naive Bayes
+# Hướng dẫn chạy và nộp bài: Local Server AI Strategy - Phân loại cảm xúc (Sentiment Analysis)
 
 ## 1. Mục tiêu dự án
 
-Dự án này triển khai một hệ thống AI cục bộ theo mô hình sau:
+Dự án này triển khai một hệ thống AI cục bộ để phân loại cảm xúc của câu văn bản theo hai nhãn:
+- positive
+- negative
+
+Quy trình hoạt động gồm:
 - API server nhận dữ liệu đầu vào
-- Tiền xử lý dữ liệu
+- Xử lý dữ liệu dạng vector đặc trưng
 - Huấn luyện và dự đoán bằng mô hình Naive Bayes
-- Trả kết quả dự đoán và xác suất
+- Trả kết quả dự đoán và độ tin cậy
 - Cấu hình Docker để chạy local và production-like
 - Health check để xác nhận trạng thái hệ thống
 
-Mục tiêu chính là tạo ra một ứng dụng AI hoàn chỉnh, dễ kiểm thử, dễ chạy ở môi trường cục bộ và có thể đóng gói bằng Docker theo đúng yêu cầu của đề tài.
+Mục tiêu chính là tạo ra một ứng dụng AI phân loại cảm xúc, dễ kiểm thử, dễ chạy ở môi trường cục bộ và có thể đóng gói bằng Docker theo đúng yêu cầu của đề tài.
 
 ---
 
@@ -20,7 +24,7 @@ Thư mục dự án bao gồm:
 
 ```text
 hocmaycoban/
-├── app.py                  # API Flask + mô hình Naive Bayes
+├── app.py                  # API Flask + mô hình Naive Bayes cho phân loại cảm xúc
 ├── Dockerfile              # Docker image configuration
 ├── docker-compose.yml      # Cấu hình chạy nhiều service / container
 ├── requirements.txt        # Dependencies cần thiết
@@ -36,7 +40,7 @@ hocmaycoban/
 
 ## 3. Mô tả dữ liệu đầu vào
 
-Dữ liệu đầu vào là một vector 5 thuộc tính:
+Dữ liệu đầu vào là một vector 5 thuộc tính biểu diễn đặc trưng cảm xúc của câu:
 
 ```json
 {
@@ -57,22 +61,29 @@ Các feature tương ứng:
 - API sẽ kiểm tra độ dài mảng đầu vào trước khi đưa vào mô hình
 - Nếu thiếu hoặc sai số lượng feature, API trả về lỗi 400
 
+### Ví dụ test case
+
+1. Câu tích cực: "Tôi rất thích sản phẩm này."
+   - Kết quả mong muốn: `positive`
+
+2. Câu tiêu cực: "Sản phẩm này thật sự tệ và làm tôi thất vọng."
+   - Kết quả mong muốn: `negative`
+
 ---
 
 ## 4. Quy trình huấn luyện mô hình Naive Bayes
 
 Mô hình Naive Bayes được huấn luyện theo quy trình sau:
 
-1. Tạo tập dữ liệu giả lập cho 3 lớp:
-   - class_0
-   - class_1
-   - class_2
-2. Sinh dữ liệu với các pattern đặc trưng cho từng lớp
+1. Tạo tập dữ liệu giả lập cho 2 nhãn:
+   - positive
+   - negative
+2. Sinh dữ liệu với các pattern đặc trưng cho từng cảm xúc
 3. Thêm nhiễu ngẫu nhiên để mô phỏng dữ liệu thực tế
 4. Chuyển dữ liệu thành ma trận feature
 5. Huấn luyện mô hình MultinomialNB từ scikit-learn
-6. Tính xác suất của từng lớp
-7. Chọn lớp có xác suất lớn nhất làm prediction
+6. Tính xác suất của từng nhãn
+7. Chọn nhãn có xác suất lớn nhất làm prediction
 
 ### Mã huấn luyện chính
 
@@ -126,12 +137,142 @@ API sẽ thực hiện các bước:
   "data": {
     "model": "naive_bayes",
     "endpoint": "/api/v1/predict",
-    "prediction": "class_0",
+    "prediction": "positive",
     "probability": 0.8,
     "health_status": "healthy"
   }
 }
 ```
+
+### Test case mẫu cho API sentiment analysis
+
+Dưới đây là bộ test case mẫu theo đúng nhãn `positive` / `negative`.
+
+#### 1) Test case positive hợp lệ
+
+Request:
+
+```json
+{
+  "features": [1, 1, 1, 0, 0]
+}
+```
+
+Kết quả dự kiến:
+
+```json
+{
+  "success": true,
+  "prediction": "positive"
+}
+```
+
+Mô tả: đây là mẫu biểu diễn câu có cảm xúc tích cực.
+
+#### 2) Test case negative hợp lệ
+
+Request:
+
+```json
+{
+  "features": [0, 0, 0, 1, 1]
+}
+```
+
+Kết quả dự kiến:
+
+```json
+{
+  "success": true,
+  "prediction": "negative"
+}
+```
+
+Mô tả: đây là mẫu biểu diễn câu có cảm xúc tiêu cực.
+
+#### 3) Test case positive khác
+
+Request:
+
+```json
+{
+  "features": [1, 0, 1, 0, 0]
+}
+```
+
+Kết quả dự kiến:
+
+```json
+{
+  "success": true,
+  "prediction": "positive"
+}
+```
+
+Mô tả: mẫu này dùng để kiểm tra hệ thống nhận diện cảm xúc tích cực trong các trường hợp tương tự.
+
+#### 4) Test case negative khác
+
+Request:
+
+```json
+{
+  "features": [0, 1, 0, 1, 1]
+}
+```
+
+Kết quả dự kiến:
+
+```json
+{
+  "success": true,
+  "prediction": "negative"
+}
+```
+
+Mô tả: mẫu này dùng để kiểm tra hệ thống nhận diện cảm xúc tiêu cực với biến thể khác.
+
+#### 5) Test case sai số lượng feature
+
+Request:
+
+```json
+{
+  "features": [1, 0, 1]
+}
+```
+
+Kết quả dự kiến:
+
+```json
+{
+  "success": false,
+  "status": 400,
+  "message": "features cần đúng 5 phần tử"
+}
+```
+
+Mô tả: kiểm tra lỗi khi mảng đầu vào không đúng độ dài yêu cầu.
+
+#### 6) Test case body không hợp lệ
+
+Request:
+
+```json
+null
+```
+
+Kết quả dự kiến:
+
+```json
+{
+  "success": false,
+  "status": 400,
+  "message": "Request body phải là JSON hợp lệ"
+}
+```
+
+Mô tả: kiểm tra xử lý lỗi khi request không có body JSON hợp lệ.
 
 ---
 

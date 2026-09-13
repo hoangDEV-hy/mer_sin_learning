@@ -1,4 +1,4 @@
-# Naive Bayes Docker Local Version
+# Sentiment Analysis Docker Local Version
 
 ## Cài đặt
 
@@ -33,11 +33,12 @@ docker compose down
 {
   "success": true,
   "status": 200,
-  "message": "Dự đoán Naive Bayes thành công",
+  "message": "Dự đoán cảm xúc thành công",
   "data": {
     "model": "naive_bayes",
+    "task": "sentiment_analysis",
     "endpoint": "/api/v1/predict",
-    "prediction": "class_0",
+    "prediction": "positive",
     "probability": 0.8,
     "health_status": "healthy"
   }

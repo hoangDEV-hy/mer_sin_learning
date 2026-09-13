@@ -22,9 +22,8 @@ app.config["JSON_SORT_KEYS"] = False
 def build_training_data() -> pd.DataFrame:
     rng = np.random.default_rng(42)
     profile_map = {
-        "class_0": np.array([1, 0, 1, 0, 0], dtype=int),
-        "class_1": np.array([0, 1, 0, 1, 1], dtype=int),
-        "class_2": np.array([1, 1, 1, 0, 1], dtype=int),
+        "positive": np.array([1, 1, 1, 0, 0], dtype=int),
+        "negative": np.array([0, 0, 0, 1, 1], dtype=int),
     }
 
     rows: List[Dict[str, Any]] = []
@@ -98,9 +97,11 @@ def root() -> Any:
         {
             "success": True,
             "status": 200,
-            "message": "Naive Bayes Local AI API",
+            "message": "Sentiment Classification Local AI API",
             "data": {
                 "model": "naive_bayes",
+                "task": "sentiment_analysis",
+                "labels": ["positive", "negative"],
                 "version": "1.0.0",
                 "health_status": "healthy",
                 "endpoint": "/api/v1/predict",
@@ -118,8 +119,10 @@ def health() -> Any:
             "message": "Hệ thống sẵn sàng",
             "data": {
                 "model": "naive_bayes",
+                "task": "sentiment_analysis",
                 "health_status": "healthy",
                 "features": FEATURE_NAMES,
+                "labels": ["positive", "negative"],
             },
         }
     )
@@ -172,9 +175,10 @@ def predict_api() -> Any:
     response = {
         "success": True,
         "status": 200,
-        "message": "Dự đoán Naive Bayes thành công",
+        "message": "Dự đoán cảm xúc thành công",
         "data": {
             "model": "naive_bayes",
+            "task": "sentiment_analysis",
             "endpoint": "/api/v1/predict",
             "prediction": result["prediction"],
             "probability": round(float(result["probability"]), 4),
